@@ -1,3 +1,5 @@
+### Note: Modified to work with ANTLR 3.0.1 (though not very pretty...)
+
 # sbt-antlr
 
 A plugin for sbt-0.12.x that generates code based on an antlr 3.5 grammar.
