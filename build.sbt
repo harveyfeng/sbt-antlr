@@ -6,7 +6,7 @@ organization := "com.github.stefri"
 
 version := "0.5.1"
 
-libraryDependencies += "org.antlr" % "antlr" % "3.5" % "compile"
+libraryDependencies += "org.antlr" % "antlr" % "3.0.1" % "compile"
 
 scalacOptions := Seq("-deprecation", "-unchecked")
 

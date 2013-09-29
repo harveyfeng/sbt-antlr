@@ -21,6 +21,7 @@ import Process._
 import Keys._
 import org.antlr.Tool
 import scala.collection.JavaConversions._
+import scala.collection.mutable.ArrayBuffer
 import Project.Initialize
 
 object SbtAntlrPlugin extends Plugin {
@@ -61,7 +62,7 @@ object SbtAntlrPlugin extends Plugin {
     antlrToolConfiguration := AntlrToolConfiguration(),
     antlrGeneratorConfiguration := AntlrGeneratorConfiguration(),
     antlrPluginConfiguration := PluginConfiguration(),
-    antlrDependency := "org.antlr" % "antlr" % "3.5",
+    antlrDependency := "org.antlr" % "antlr" % "3.0.1",
 
     sourceDirectory <<= (sourceDirectory in Compile) { _ / "antlr3" },
     javaSource <<= sourceManaged in Compile,
@@ -110,46 +111,28 @@ object SbtAntlrPlugin extends Plugin {
 
     // configure antlr tool
     val antlr = new Tool
-    log.info("ANTLR: Using ANTLR version %s to generate source files.".format(antlr.VERSION))
-    antlr.setDebug(tool.debug)
-    antlr.setGenerate_DFA_dot(tool.dfa)
-    antlr.setGenerate_NFA_dot(tool.nfa)
-    antlr.setProfile(tool.profile)
-    antlr.setReport(tool.report)
-    antlr.setPrintGrammar(tool.printGrammar)
-    antlr.setTrace(tool.trace)
-    antlr.setVerbose(tool.verbose)
-    antlr.setMessageFormat(tool.messageFormat)
-    antlr.setMaxSwitchCaseLabels(gen.maxSwitchCaseLabels)
-    antlr.setMinSwitchAlts(gen.minSwitchAlts)
-
-    // propagate source and target path to antlr
-    antlr.setInputDirectory(srcDir.getPath)
-    antlr.setOutputDirectory(target.getPath)
-
-    // tell antlr that we always want the output files to be produced in the output directory
-    // using the same relative path as the input file was to the input directory.
-    antlr.setForceRelativeOutput(true)
-
-    // tell the antlr tool that we want sorted build mode
-    antlr.setMake(true)
+    log.info("ANTLR: Using ANTLR version %s to generate source files.".format("3.0.1"))
+    var processArgsArr = new ArrayBuffer[String]
+    processArgsArr.append("-message-format")
+    processArgsArr.append(gen.minSwitchAlts.toString)
 
     // process grammars
     val grammars = (srcDir ** ("*" + options.grammarSuffix)).get
     log.info("ANTLR: Generating source files for %d grammars.".format(grammars.size))
 
-    // add each grammar file into the antlr tool's list of grammars to process
+    // add each grammar file to the list of grammar files to process
     grammars foreach { g =>
       val relPath = g relativeTo srcDir
-      log.info("ANTLR: Grammar file '%s' detected.".format(relPath.get.getPath))
-      antlr.addGrammarFile(relPath.get.getPath)
+      log.info("ANTLR: Grammar file '%s' detected, full path: %s.".format(relPath.get.getPath, g.getAbsolutePath))
+      processArgsArr.append(g.getAbsolutePath)
     }
+
+    antlr.setOutputDirectory(target.getPath)
+
+    antlr.processArgs(processArgsArr.toArray)
 
     // process all grammars
     antlr.process
-    if (antlr.getNumErrors > 0) {
-      log.error("ANTLR: Caught %d build errors.".format(antlr.getNumErrors))
-    }
 
     (target ** ("*" + options.targetLanguage.suffix)).get.toSet
   }
